@@ -1,0 +1,64 @@
+library(tidyverse)
+library(rvest)
+library(xlm)
+
+# Oppgave 1
+# Laster ned nettsiden som en html fil.
+webside <- read_html("https://www.motor.no/aktuelt/motors-store-vintertest-av-rekkevidde-pa-elbiler/217132/bil")
+
+# Lager nettsiden om til en tabell.
+tables <- webside %>% html_table(fill = TRUE)
+
+# Finner ut at jeg skal ha den første tabellen fra nettsiden, så det da "kaller" jeg den frem ved å kalle den 1.
+elbil <- tables[[1]]
+elbil <- elbil[-1,]
+
+# Ser på overskriftene.
+colnames(elbil)
+
+
+# Fjerner x variabler fra tabellen, for å fjerne unødvendige rot.
+elbil <- elbil %>% 
+na_if("x") %>% 
+  na.omit()
+
+# Lager navn til kolonnene i tabellen.
+colnames(elbil) <- c("Modell (temp. varierte fra 0° til -10°)", "WLTP", "Stopp", "Avvik")
+elbil
+elbil <- elbil %>% 
+  mutate(WLTP = as.numeric(gsub("km.*", "", WLTP)))
+  elbil <- elbil %>% 
+  mutate(Stopp = as.numeric(gsub("km.*", "", Stopp)))
+
+elbil
+
+
+# WLTP er en måleenhet er på forbruket til elbilen ,inkludert CO2 og rekkevidde. 
+# Stopp er lengden bilen har kjørt etter den blir tom for energi og må lades.
+
+# Lager plot med en 45 graders linje.
+elbil %>% ggplot(aes(x = WLTP, y = Stopp)) +
+  geom_point() +
+  labs(title= "El-bilens kjørelengde", 
+       x= "WLTP", 
+       y= "Stopp") +
+  theme_gray() +
+  scale_y_continuous(limits = c(200, 600)) +
+  scale_x_continuous(limits = c(200, 600)) +
+  geom_abline(col = "red",
+              size = 1)
+
+# Oppgave 2
+lm(Stopp ~ WLTP, data=elbil)
+
+elbil %>% ggplot(aes(x=WLTP, y= Stopp)) +
+  geom_point() +
+  geom_smooth(method=lm)  +
+  labs(title= "El-bilens rekkevidde", 
+       x= "WLTP", 
+       y= "Stopp") +
+  theme_gray()
+
+# Tolker de to verdiene vi får fra lm-funksjonen, som en årssakssammenheng mellom "lovet lengde" (wltp) og stopp.
+# Intercepten her er skjæringspunktet og det er i dette plottet -26.6450, og WLTP-tallet (0.8671) vi får ut forklarer oss hvor stor korrelasjonskoffesienten er.
+# Korrelasjon er en type årssakssammenheng og i dette tilfellet er den positiv. Altså når x stiger, vil y stige det samme.
