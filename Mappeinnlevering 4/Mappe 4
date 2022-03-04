@@ -1,0 +1,75 @@
+
+# Laster inn nødvendige pakker
+
+rm(list=ls())
+install.packages("rlist")
+library(rvest)
+library(tidyverse)
+library(rlist)
+install.packages(("purrr"))
+library(purrr)
+
+# Finner mine emner og laster ned timeplanen for mitt semester
+
+timeplan <- "https://timeplan.uit.no/emne_timeplan.php?sem=22v&module%5B%5D=SOK-1005-1&week=1-20&View=list&module[]=SOK-1006-1&module[]=SOK-1016-1#week-9"
+
+# Bruker read_html til å lese og laste inn urlen
+
+timeliste <- read_html(timeplan)
+
+# Henter inn tabellen 
+
+table <- html_nodes(timeliste, 'table')
+table <- html_table(table, fill=TRUE) 
+
+# Skriver inn 1 fordi det er en første og eneste tabellen
+
+table[[1]]
+TL <- list.stack(table)
+
+# Fikser at kolonnenenavnene er " markert " iforhold til resten av tabellen
+
+colnames(TL) <- TL[1,]
+
+# Bestemmer hvilke variabler som blir valgt
+
+TL <- TL %>% 
+  filter(!Dato=="Dato") %>% 
+  separate(Dato, into = c("Dag", "Dato"), sep = "(?<=[A-Za-z])(?=[0-9])")
+
+
+TL <- TL[-length(df$Dag),]
+
+# Kode inn til datasett formatet.
+
+TL$Dato <- as.Date(TL$Dato, format="%d.%m.%Y")
+
+# Lager en uke variabel
+
+TL$Uke <- strftime(TL$Dato, format = "%V")
+TL %>% 
+  select(Dag,Dato,Uke,Tid,Rom,Emnekode)
+
+TL
+
+# Prøvde med funksjonen "map", fikk omsiders ikke til å få koden til å funke med den
+# Map funksjonen skal returnere en liste og gjøre koden egentlig mer effektiv
+
+TL1 <- read_html("https://timeplan.uit.no/emne_timeplan.php?sem=22v&module[]=SOK-1005-1#week-9")
+
+
+TL2 <- read_html("https://timeplan.uit.no/emne_timeplan.php?sem=22v&module[]=SOK-1006-1#week-9")
+
+
+TL3 <- read_html("https://timeplan.uit.no/emne_timeplan.php?sem=22v&module[]=SOK-1016-1#week-9")
+
+
+map(TL1, "Dato")
+
+map(TL1, TL2, TL3)
+
+map(TL1, mean)
+map(TL2, mean)
+map(TL3, mean)
+
+mydata <- map_df(TL1, read_html(.,stringsAsFactors=FALSE))
