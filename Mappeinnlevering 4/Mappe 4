@@ -1,75 +1,47 @@
+# Laster ned nødvendige pakker:
 
-# Laster inn nødvendige pakker
-
-rm(list=ls())
-install.packages("rlist")
+library(purrr)
 library(rvest)
 library(tidyverse)
 library(rlist)
-install.packages(("purrr"))
-library(purrr)
 
-# Finner mine emner og laster ned timeplanen for mitt semester
+browseURL("https://timeplan.uit.no/emne_timeplan.php?sem=22v&module%5B%5D=SOK-1005-1&week=1-20&View=list")
 
-timeplan <- "https://timeplan.uit.no/emne_timeplan.php?sem=22v&module%5B%5D=SOK-1005-1&week=1-20&View=list&module[]=SOK-1006-1&module[]=SOK-1016-1#week-9"
+url <-"https://timeplan.uit.no/emne_timeplan.php?sem=22v&module%5B%5D=SOK-1005-1&week=1-20&View=list"
 
-# Bruker read_html til å lese og laste inn urlen
+liste <- list("https://timeplan.uit.no/emne_timeplan.php?sem=22v&module%5B%5D=SOK-1005-1&week=1-20&View=list", 
+              "https://timeplan.uit.no/emne_timeplan.php?sem=22v&module%5B%5D=SOK-1006-1&week=1-20&View=list",
+              "https://timeplan.uit.no/emne_timeplan.php?sem=22v&module%5B%5D=SOK-1016-1&week=1-20&View=list")
 
-timeliste <- read_html(timeplan)
+# Lager funksjonen: timeplan
 
-# Henter inn tabellen 
+timeplan <- function(url1){
+  page <- read_html(url1)
+  table <- html_nodes(page, 'table')
+  table <- html_table(table, fill=TRUE) 
+  dframe <- list.stack(table)
+  colnames(dframe) <- dframe[1,]
+  dframe <- dframe %>% filter(!Dato=="Dato")
+  dframe <- dframe %>% separate(Dato, 
+                              into = c("Dag", "Dato"), 
+                              sep = "(?<=[A-Za-z])(?=[0-9])")
+  dframe <- dframe[-length(dframe$Dag),]
+  dframe$Dato <- as.Date(dframe$Dato, format="%d.%m.%Y")
+  dframe$Uke <- strftime(dframe$Dato, format = "%V")
+  dframe <- dframe %>% select(Dag,Dato,Uke,Tid,Rom)
+  return(dframe)
+}
+# Bruker map- funksjonen for å legge sammen liste og funksjonen
 
-table <- html_nodes(timeliste, 'table')
-table <- html_table(table, fill=TRUE) 
+map(liste, timeplan)
 
-# Skriver inn 1 fordi det er en første og eneste tabellen
+# Legger inn timeplanen og listen inn i selve sluttproduktet: semesterplanen
 
-table[[1]]
-TL <- list.stack(table)
-
-# Fikser at kolonnenenavnene er " markert " iforhold til resten av tabellen
-
-colnames(TL) <- TL[1,]
-
-# Bestemmer hvilke variabler som blir valgt
-
-TL <- TL %>% 
-  filter(!Dato=="Dato") %>% 
-  separate(Dato, into = c("Dag", "Dato"), sep = "(?<=[A-Za-z])(?=[0-9])")
-
-
-TL <- TL[-length(df$Dag),]
-
-# Kode inn til datasett formatet.
-
-TL$Dato <- as.Date(TL$Dato, format="%d.%m.%Y")
-
-# Lager en uke variabel
-
-TL$Uke <- strftime(TL$Dato, format = "%V")
-TL %>% 
-  select(Dag,Dato,Uke,Tid,Rom,Emnekode)
-
-TL
-
-# Prøvde med funksjonen "map", fikk omsiders ikke til å få koden til å funke med den
-# Map funksjonen skal returnere en liste og gjøre koden egentlig mer effektiv
-
-TL1 <- read_html("https://timeplan.uit.no/emne_timeplan.php?sem=22v&module[]=SOK-1005-1#week-9")
+semesterplan <- map(liste, timeplan)
+semesterplan <- bind_rows(semesterplan)
+semesterplan %>% 
+  arrange(Dato)
 
 
-TL2 <- read_html("https://timeplan.uit.no/emne_timeplan.php?sem=22v&module[]=SOK-1006-1#week-9")
+# Samarbeidet med Fridtjof Mortensen
 
-
-TL3 <- read_html("https://timeplan.uit.no/emne_timeplan.php?sem=22v&module[]=SOK-1016-1#week-9")
-
-
-map(TL1, "Dato")
-
-map(TL1, TL2, TL3)
-
-map(TL1, mean)
-map(TL2, mean)
-map(TL3, mean)
-
-mydata <- map_df(TL1, read_html(.,stringsAsFactors=FALSE))
