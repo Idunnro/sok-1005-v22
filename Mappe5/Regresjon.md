@@ -473,3 +473,5 @@ sns.regplot(x, y)
 ```python
 
 ```
+
+# Fikk ikke regresjonslinjen opp, men fikk den opp med urlen til espen under (statsmodels). Prøvde med ulike urler men funket ikke.
