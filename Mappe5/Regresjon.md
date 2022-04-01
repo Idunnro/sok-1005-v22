@@ -474,4 +474,7 @@ sns.regplot(x, y)
 
 ```
 
-# Fikk ikke regresjonslinjen opp, men fikk den opp med urlen til espen under (statsmodels). Prøvde med ulike urler men funket ikke.
+## Se bort i fra kommentar på regresjonlinje, fikk ikke output på min kode lenger enn det.
+## Men det vi hadde sett var :
+## - den lovte stopplengden og den reelle stopplengden for el- bilene ( det er sammenhengen mellom de)
+## Fikk ikke regresjonslinjen opp, men fikk den opp med urlen til espen under (statsmodels). Prøvde med ulike urler men funket ikke.
